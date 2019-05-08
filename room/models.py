@@ -46,3 +46,10 @@ class Participant(BaseModel):
     def __str__(self):
         """returns id as Unicode “representation” of Participant object."""
         return self.uid
+
+    @property
+    def access_token(self):
+        return jwt.encode(
+            payload={"participant_uid": self.uid, "room_uid": self.room.uid},
+            key=settings.JWT_SECRET_KEY
+        )
