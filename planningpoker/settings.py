@@ -130,3 +130,6 @@ REST_FRAMEWORK = {
         'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
 }
+
+SUID_ALPHABET = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
+SUID_LENGTH = 10
