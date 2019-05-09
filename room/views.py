@@ -1,5 +1,4 @@
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
                                      ListAPIView)
@@ -7,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from room.models import Room, Participant, Issue, Vote
-from room.permissions import IsParticipantPermission
+from room.permissions import IsRoomParticipantPermission
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
                               ParticipantSerializer, IssueSerializer,
@@ -45,6 +44,7 @@ class JoinRoomAPIView(APIView):
 
 class RoomParticipantsListAPIView(ListAPIView):
 
+    permission_classes = [IsRoomParticipantPermission]
     serializer_class = ParticipantSerializer
     pagination_class = None
 
@@ -55,6 +55,7 @@ class RoomParticipantsListAPIView(ListAPIView):
 
 class RoomIssueAPIView(ListCreateAPIView):
 
+    permission_classes = [IsRoomParticipantPermission]
     serializer_class = IssueSerializer
     pagination_class = None
 
@@ -70,6 +71,7 @@ class RoomIssueAPIView(ListCreateAPIView):
 
 class IssueAPIView(RetrieveUpdateDestroyAPIView):
 
+    permission_classes = [IsRoomParticipantPermission]
     serializer_class = IssueSerializer
     lookup_field = 'uid'
 
@@ -81,14 +83,11 @@ class IssueAPIView(RetrieveUpdateDestroyAPIView):
 class SubmitVoteAPIView(APIView):
     """Submit a vote for a participant."""
 
-    permission_classes = [IsParticipantPermission]
+    permission_classes = [IsRoomParticipantPermission]
 
     def post(self, request, room_uid, issue_uid):
 
         issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
-
-        if issue.room != request.participant.room:
-            raise PermissionDenied
 
         serializer = SubmitVoteInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
