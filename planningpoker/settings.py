@@ -135,3 +135,32 @@ SUID_ALPHABET = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
 SUID_LENGTH = 10
 
 JWT_SECRET_KEY = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
+
+# Story Points settings
+ZERO = '0'
+HALF = '1/2'
+ONE = '1'
+TWO = '2'
+THREE = '3'
+FIVE = '5'
+EIGHT = '8'
+THIRTEEN = '13'
+TWENTY = '20'
+FORTY = '40'
+HUNDRED = '100'
+UNSURE = '?'
+STORY_POINT_CHOICES = (
+    (ZERO, '0'),
+    (HALF, '1/2'),
+    (ONE, '1'),
+    (TWO, '2'),
+    (THREE, '3'),
+    (FIVE, '5'),
+    (EIGHT, '8'),
+    (THIRTEEN, '13'),
+    (TWENTY, '20'),
+    (FORTY, '40'),
+    (HUNDRED, '100'),
+    (UNSURE, '?'),
+)
+

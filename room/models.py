@@ -53,3 +53,34 @@ class Participant(BaseModel):
             payload={"participant_uid": self.uid, "room_uid": self.room.uid},
             key=settings.JWT_SECRET_KEY
         )
+
+
+class Issue(BaseModel):
+    """
+        Data model for Issue
+
+    """
+
+    room = models.ForeignKey(Room, verbose_name=_('Room'),
+                             on_delete=models.PROTECT)
+
+    number = models.CharField(verbose_name=_("Number"), max_length=32,
+                              null=True, blank=True)
+
+    title = models.TextField(verbose_name=_("Title"))
+
+    estimated_points = models.CharField(
+        verbose_name=_("Estimated Points"),
+        max_length=32,
+        choices=settings.STORY_POINT_CHOICES,
+        null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Issue")
+        verbose_name_plural = _("Issues")
+        ordering = ("-created",)
+
+    def __str__(self):
+        """returns id as Unicode “representation” of Issue object."""
+        return self.uid
