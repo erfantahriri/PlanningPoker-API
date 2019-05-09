@@ -1,14 +1,17 @@
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
                                      ListAPIView)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from room.models import Room, Participant, Issue
+from room.models import Room, Participant, Issue, Vote
+from room.permissions import IsParticipantPermission
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
-                              ParticipantSerializer, IssueSerializer)
+                              ParticipantSerializer, IssueSerializer,
+                              SubmitVoteInputSerializer)
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -73,3 +76,32 @@ class IssueAPIView(RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         return Issue.objects.filter(room=room)
+
+
+class SubmitVoteAPIView(APIView):
+    """Submit a vote for a participant."""
+
+    permission_classes = [IsParticipantPermission]
+
+    def post(self, request, room_uid, issue_uid):
+
+        issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
+
+        if issue.room != request.participant.room:
+            raise PermissionDenied
+
+        serializer = SubmitVoteInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        vote, created = Vote.objects.get_or_create(
+            issue=issue,
+            participant=request.participant
+        )
+
+        vote.estimated_points = serializer.data.get('estimated_points')
+        vote.save()
+
+        if created:
+            return Response(status=status.HTTP_201_CREATED)
+
+        return Response(status=status.HTTP_200_OK)
