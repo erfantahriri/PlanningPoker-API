@@ -9,4 +9,6 @@ urlpatterns = [
     path('<str:room_uid>/participants',
          views.RoomParticipantsListAPIView.as_view()),
     path('<str:room_uid>/issues', views.RoomIssueAPIView.as_view()),
+    path('<str:room_uid>/issues/<str:uid>',
+         views.IssueAPIView.as_view()),
 ]

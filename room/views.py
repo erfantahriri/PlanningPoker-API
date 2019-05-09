@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
+                                     RetrieveUpdateDestroyAPIView,
                                      ListAPIView)
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -62,3 +63,13 @@ class RoomIssueAPIView(ListCreateAPIView):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         serializer.validated_data['room_id'] = room.id
         serializer.save()
+
+
+class IssueAPIView(RetrieveUpdateDestroyAPIView):
+
+    serializer_class = IssueSerializer
+    lookup_field = 'uid'
+
+    def get_queryset(self):
+        room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
+        return Issue.objects.filter(room=room)
