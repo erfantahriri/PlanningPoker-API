@@ -84,3 +84,33 @@ class Issue(BaseModel):
     def __str__(self):
         """returns id as Unicode “representation” of Issue object."""
         return self.uid
+
+
+class Vote(BaseModel):
+    """
+        Data model for Vote
+
+    """
+
+    issue = models.ForeignKey(Issue, verbose_name=_('Issue'),
+                              on_delete=models.CASCADE)
+
+    participant = models.ForeignKey(Participant,
+                                    verbose_name=_('Participant'),
+                                    on_delete=models.CASCADE)
+
+    estimated_points = models.CharField(
+        verbose_name=_("Estimated Points"),
+        max_length=32,
+        choices=settings.STORY_POINT_CHOICES,
+        null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Vote")
+        verbose_name_plural = _("Votes")
+        ordering = ("-created",)
+
+    def __str__(self):
+        """returns id as Unicode “representation” of Vote object."""
+        return self.uid
