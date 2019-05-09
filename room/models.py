@@ -33,7 +33,7 @@ class Participant(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.PROTECT)
+                             on_delete=models.CASCADE)
 
     name = models.CharField(verbose_name=_("name"), max_length=128)
 
@@ -62,7 +62,7 @@ class Issue(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.PROTECT)
+                             on_delete=models.CASCADE)
 
     number = models.CharField(verbose_name=_("Number"), max_length=32,
                               null=True, blank=True)
