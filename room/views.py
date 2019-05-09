@@ -4,10 +4,10 @@ from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from room.models import Room, Participant
+from room.models import Room, Participant, Issue
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
-                              ParticipantSerializer)
+                              ParticipantSerializer, IssueSerializer)
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -47,3 +47,18 @@ class RoomParticipantsListAPIView(ListAPIView):
     def get_queryset(self):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         return Participant.objects.filter(room=room)
+
+
+class RoomIssueAPIView(ListCreateAPIView):
+
+    serializer_class = IssueSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
+        return Issue.objects.filter(room=room)
+
+    def perform_create(self, serializer):
+        room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
+        serializer.validated_data['room_id'] = room.id
+        serializer.save()

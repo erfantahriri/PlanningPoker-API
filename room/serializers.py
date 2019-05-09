@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from room.models import Room, Participant
+from room.models import Room, Participant, Issue
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -42,3 +42,15 @@ class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Participant
         fields = ('uid', 'name', 'created',)
+
+
+class IssueSerializer(serializers.ModelSerializer):
+    """Serialize Issue model data."""
+
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
+    title = serializers.CharField(required=True)
+
+    class Meta:
+        model = Issue
+        fields = ('uid', 'number', 'title', 'estimated_points', 'created',)
