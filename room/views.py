@@ -1,10 +1,13 @@
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView, get_object_or_404
+from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
+                                     ListAPIView)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from room.models import Room, Participant
-from room.serializers import RoomSerializer, JoinRoomInputSerializer, ParticipantSerializerWithToken
+from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
+                              ParticipantSerializerWithToken,
+                              ParticipantSerializer)
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -19,9 +22,7 @@ class JoinRoomAPIView(APIView):
     def post(self, request, room_uid):
 
         room = get_object_or_404(Room, uid=room_uid)
-
         serializer = JoinRoomInputSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
         participant, created = Participant.objects.get_or_create(
@@ -36,3 +37,13 @@ class JoinRoomAPIView(APIView):
                             status=status.HTTP_201_CREATED)
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class RoomParticipantsListAPIView(ListAPIView):
+
+    serializer_class = ParticipantSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
+        return Participant.objects.filter(room=room)

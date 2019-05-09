@@ -6,6 +6,8 @@ from room.models import Room, Participant
 class RoomSerializer(serializers.ModelSerializer):
     """Serialize Room model data."""
 
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
 
@@ -21,8 +23,22 @@ class JoinRoomInputSerializer(serializers.Serializer):
 
 
 class ParticipantSerializerWithToken(serializers.ModelSerializer):
-    """Serialize Participant model data."""
+    """Serialize Participant model data with access_token."""
+
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
 
     class Meta:
         model = Participant
         fields = ('uid', 'name', 'access_token', 'created',)
+
+
+class ParticipantSerializer(serializers.ModelSerializer):
+    """Serialize Participant model data."""
+
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Participant
+        fields = ('uid', 'name', 'created',)
