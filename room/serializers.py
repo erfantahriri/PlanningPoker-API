@@ -1,26 +1,8 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from room.models import Room, Participant, Issue, Vote
 from room.validators import validate_estimated_points
-
-
-class RoomSerializer(serializers.ModelSerializer):
-    """Serialize Room model data."""
-
-    uid = serializers.CharField(read_only=True)
-    created = serializers.CharField(read_only=True)
-    title = serializers.CharField(required=True)
-    description = serializers.CharField(required=True)
-
-    class Meta:
-        model = Room
-        fields = ('uid', 'title', 'description', 'updated', 'created',)
-
-
-class JoinRoomInputSerializer(serializers.Serializer):
-    """Input serializer for join room."""
-
-    name = serializers.CharField(required=True)
 
 
 class ParticipantSerializerWithToken(serializers.ModelSerializer):
@@ -32,6 +14,45 @@ class ParticipantSerializerWithToken(serializers.ModelSerializer):
     class Meta:
         model = Participant
         fields = ('uid', 'name', 'access_token', 'created',)
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    """Serialize Room model data."""
+
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ('uid', 'title', 'description', 'updated', 'created',)
+
+
+class RoomSerializerWithToken(RoomSerializer):
+    """Serialize Room model data with creator participant's access token."""
+
+    title = serializers.CharField(required=True)
+    description = serializers.CharField(required=True)
+    creator_name = serializers.CharField(required=True, write_only=True)
+    creator = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ('uid', 'title', 'description', 'creator_name', 'creator',
+                  'updated', 'created',)
+
+    def validate_title(self, value):
+        if Room.objects.filter(title=value).exists():
+            raise ValidationError(["This Room title is already Taken."])
+        return value
+
+    def get_creator(self, obj):
+        return ParticipantSerializerWithToken(instance=obj.creator).data
+
+
+class JoinRoomInputSerializer(serializers.Serializer):
+    """Input serializer for join room."""
+
+    name = serializers.CharField(required=True)
 
 
 class ParticipantSerializer(serializers.ModelSerializer):

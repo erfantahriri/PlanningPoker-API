@@ -10,13 +10,26 @@ from room.permissions import IsRoomParticipantPermission
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
                               ParticipantSerializer, IssueSerializer,
-                              SubmitVoteInputSerializer, VoteSerializer)
+                              SubmitVoteInputSerializer, VoteSerializer, RoomSerializerWithToken)
 
 
 class RoomAPIView(ListCreateAPIView):
 
-    serializer_class = RoomSerializer
     queryset = Room.objects.all()
+
+    def perform_create(self, serializer):
+        creator_name = serializer.validated_data.pop("creator_name")
+        room = serializer.save()
+        Participant.objects.create(
+            room=room,
+            name=creator_name,
+            is_creator=True
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return RoomSerializerWithToken
+        return RoomSerializer
 
 
 class JoinRoomAPIView(APIView):

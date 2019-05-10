@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+APPEND_SLASH = True
+
 
 # Application definition
 
@@ -168,4 +170,3 @@ STORY_POINT_CHOICES_LIST = [
     ZERO, HALF, ONE, TWO, THREE, FIVE, EIGHT, THIRTEEN, TWENTY, FORTY,
     HUNDRED, UNSURE,
 ]
-
