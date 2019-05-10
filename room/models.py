@@ -37,6 +37,9 @@ class Participant(BaseModel):
 
     name = models.CharField(verbose_name=_("name"), max_length=128)
 
+    is_creator = models.BooleanField(verbose_name=_("Is Creator"),
+                                     default=False)
+
     class Meta:
         verbose_name = _("Participant")
         verbose_name_plural = _("Participants")
