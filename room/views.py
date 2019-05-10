@@ -10,7 +10,7 @@ from room.permissions import IsRoomParticipantPermission
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
                               ParticipantSerializer, IssueSerializer,
-                              SubmitVoteInputSerializer)
+                              SubmitVoteInputSerializer, VoteSerializer)
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -80,12 +80,12 @@ class IssueAPIView(RetrieveUpdateDestroyAPIView):
         return Issue.objects.filter(room=room)
 
 
-class SubmitVoteAPIView(APIView):
-    """Submit a vote for a participant."""
+class VoteAPIView(APIView):
 
     permission_classes = [IsRoomParticipantPermission]
 
     def post(self, request, room_uid, issue_uid):
+        """Submit a vote for a participant."""
 
         issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
 
@@ -104,3 +104,12 @@ class SubmitVoteAPIView(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(status=status.HTTP_200_OK)
+
+    def get(self, request, room_uid, issue_uid):
+        """Get votes of an Issue."""
+
+        issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
+        votes = Vote.objects.filter(issue=issue)
+        serializer = VoteSerializer(instance=votes, many=True)
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

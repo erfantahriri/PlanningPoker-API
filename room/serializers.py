@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from room.models import Room, Participant, Issue
+from room.models import Room, Participant, Issue, Vote
 from room.validators import validate_estimated_points
 
 
@@ -63,3 +63,15 @@ class SubmitVoteInputSerializer(serializers.Serializer):
     estimated_points = serializers.CharField(
         required=True, validators=[validate_estimated_points]
     )
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    """Serialize Vote model data."""
+
+    participant = ParticipantSerializer()
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Vote
+        fields = ('uid', 'participant', 'estimated_points', 'created',)

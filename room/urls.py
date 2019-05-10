@@ -11,6 +11,6 @@ urlpatterns = [
     path('<str:room_uid>/issues', views.RoomIssueAPIView.as_view()),
     path('<str:room_uid>/issues/<str:uid>',
          views.IssueAPIView.as_view()),
-    path('<str:room_uid>/issues/<str:issue_uid>/vote',
-         views.SubmitVoteAPIView.as_view()),
+    path('<str:room_uid>/issues/<str:issue_uid>/votes',
+         views.VoteAPIView.as_view()),
 ]
