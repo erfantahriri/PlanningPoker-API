@@ -25,6 +25,12 @@ class Room(BaseModel):
         """returns id as Unicode “representation” of Room object."""
         return self.uid
 
+    @property
+    def creator(self):
+        return Participant.objects.filter(
+            room=self, is_creator=True
+        ).order_by("-created").first()
+
 
 class Participant(BaseModel):
     """
