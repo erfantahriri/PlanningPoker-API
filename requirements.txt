@@ -4,3 +4,4 @@ djangorestframework==3.9.3
 shortuuid==0.5.0
 PyJWT==1.7.1
 drf-yasg==1.15.0
+django-cors-headers==3.0.0
