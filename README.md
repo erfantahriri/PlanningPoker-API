@@ -4,8 +4,9 @@ This is an back-end API service for PlanningPoker application
 This application is created to handle PlanningPoker estimating sessions of scrum agile methodology
 
 ## Addresses
-* [PlanningPoker Website](http://scrumplanning.ir)
+* [PlanningPoker API Doc](http://82.102.10.119:8080/redoc/) 
 * [PlanningPoker API](http://82.102.10.119:8080) 
+* [PlanningPoker Website](http://scrumplanning.ir)
 
 ## requirements
 
@@ -60,4 +61,4 @@ Master [git repository](https://github.com/erfantahriri/PlanningPoker-API):
 
 ## Licensing
 
-This library is BSD-licensed.
+This library is GPL-3.0 licenced.
