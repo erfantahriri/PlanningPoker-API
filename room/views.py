@@ -1,3 +1,5 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
@@ -80,6 +82,15 @@ class RoomIssueAPIView(ListCreateAPIView):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         serializer.validated_data['room_id'] = room.id
         serializer.save()
+
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room.uid),
+            {
+                'type': 'send_message',
+                'content': 'New Issue Added!!!'
+            }
+        )
 
 
 class IssueAPIView(RetrieveUpdateDestroyAPIView):
