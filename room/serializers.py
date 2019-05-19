@@ -72,26 +72,6 @@ class ParticipantSerializer(serializers.ModelSerializer):
         fields = ('uid', 'name', 'created',)
 
 
-class IssueSerializer(serializers.ModelSerializer):
-    """Serialize Issue model data."""
-
-    uid = serializers.CharField(read_only=True)
-    created = serializers.CharField(read_only=True)
-    title = serializers.CharField(required=True)
-
-    class Meta:
-        model = Issue
-        fields = ('uid', 'number', 'title', 'estimated_points', 'created',)
-
-
-class SubmitVoteInputSerializer(serializers.Serializer):
-    """Input serializer for Submit Vote."""
-
-    estimated_points = serializers.CharField(
-        required=True, validators=[validate_estimated_points]
-    )
-
-
 class VoteSerializer(serializers.ModelSerializer):
     """Serialize Vote model data."""
 
@@ -102,3 +82,25 @@ class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ('uid', 'participant', 'estimated_points', 'created',)
+
+
+class IssueSerializer(serializers.ModelSerializer):
+    """Serialize Issue model data."""
+
+    title = serializers.CharField(required=True)
+    uid = serializers.CharField(read_only=True)
+    created = serializers.CharField(read_only=True)
+    votes = VoteSerializer(many=True)
+
+    class Meta:
+        model = Issue
+        fields = ('uid', 'number', 'title', 'estimated_points',
+                  'is_current', 'votes', 'created',)
+
+
+class SubmitVoteInputSerializer(serializers.Serializer):
+    """Input serializer for Submit Vote."""
+
+    estimated_points = serializers.CharField(
+        required=True, validators=[validate_estimated_points]
+    )

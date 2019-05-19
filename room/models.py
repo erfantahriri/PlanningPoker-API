@@ -100,6 +100,10 @@ class Issue(BaseModel):
         """returns id as Unicode “representation” of Issue object."""
         return self.uid
 
+    @property
+    def is_current(self):
+        return self.room.current_issue == self
+
 
 class Vote(BaseModel):
     """
