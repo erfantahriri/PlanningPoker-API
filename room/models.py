@@ -16,6 +16,12 @@ class Room(BaseModel):
 
     description = models.TextField(verbose_name=_("Description"))
 
+    current_issue = models.ForeignKey(
+        'room.Issue', verbose_name=_('Current Issue'),
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='rooms'
+    )
+
     class Meta:
         verbose_name = _("Room")
         verbose_name_plural = _("Rooms")
@@ -102,7 +108,7 @@ class Vote(BaseModel):
     """
 
     issue = models.ForeignKey(Issue, verbose_name=_('Issue'),
-                              on_delete=models.CASCADE)
+                              on_delete=models.CASCADE, related_name='votes')
 
     participant = models.ForeignKey(Participant,
                                     verbose_name=_('Participant'),
