@@ -55,6 +55,12 @@ class JoinRoomInputSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
 
 
+class SubmitRoomCurrentIsseueInputSerializer(serializers.Serializer):
+    """Input serializer for set Room's current Issue."""
+
+    issue_uid = serializers.CharField(required=True)
+
+
 class ParticipantSerializer(serializers.ModelSerializer):
     """Serialize Participant model data."""
 

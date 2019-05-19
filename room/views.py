@@ -12,7 +12,9 @@ from room.permissions import IsRoomParticipantPermission
 from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializerWithToken,
                               ParticipantSerializer, IssueSerializer,
-                              SubmitVoteInputSerializer, VoteSerializer, RoomSerializerWithToken)
+                              SubmitVoteInputSerializer, VoteSerializer,
+                              RoomSerializerWithToken,
+                              SubmitRoomCurrentIsseueInputSerializer)
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -83,14 +85,48 @@ class RoomIssueAPIView(ListCreateAPIView):
         serializer.validated_data['room_id'] = room.id
         serializer.save()
 
+
+class RoomCurrentIssueAPIView(APIView):
+
+    def get(self, request, room_uid):
+        """Get Room's current Issue."""
+
+        room = get_object_or_404(Room, uid=room_uid)
+
+        if not room.current_issue:
+            return Response(
+                data={
+                    "details": "This room is don't have any current issue now"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = IssueSerializer(instance=room.current_issue)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, room_uid):
+        """Set Room's current Issue."""
+
+        room = get_object_or_404(Room, uid=room_uid)
+        serializer = SubmitRoomCurrentIsseueInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        issue = get_object_or_404(Issue, uid=serializer.data.get('issue_uid'),
+                                  room__uid=room.uid)
+        room.current_issue = issue
+        room.save()
+
+        serializer = IssueSerializer(instance=issue)
+
         layer = get_channel_layer()
         async_to_sync(layer.group_send)(
             'room_{room_uid}'.format(room_uid=room.uid),
             {
-                'type': 'send_message',
-                'content': 'New Issue Added!!!'
+                'type': 'current_issue',
+                'content': serializer.data
             }
         )
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class IssueAPIView(RetrieveUpdateDestroyAPIView):

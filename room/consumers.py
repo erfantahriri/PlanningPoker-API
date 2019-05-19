@@ -3,6 +3,7 @@ import json
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
+
     async def connect(self):
         self.room_uid = self.scope['url_route']['kwargs']['room_uid']
         self.room_group_name = 'room_{room_uid}'.format(room_uid=self.room_uid)
@@ -26,21 +27,29 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
 
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        message = text_data_json
 
         # Send message to room group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                'type': 'send_message',
-                'message': message
+                'type': 'current_issue',
+                'content': message['content']
             }
         )
 
     # Send message to room group
-    async def send_message(self, message):
+    async def current_issue(self, message):
 
         # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'message': message
-        }))
+        await self.send(text_data=json.dumps(message))
+
+    async def add_issue(self, message):
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps(message))
+
+    async def add_participant(self, message):
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps(message))
