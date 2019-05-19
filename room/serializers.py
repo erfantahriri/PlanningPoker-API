@@ -90,7 +90,7 @@ class IssueSerializer(serializers.ModelSerializer):
     title = serializers.CharField(required=True)
     uid = serializers.CharField(read_only=True)
     created = serializers.CharField(read_only=True)
-    votes = VoteSerializer(many=True)
+    votes = VoteSerializer(many=True, read_only=True)
 
     class Meta:
         model = Issue
