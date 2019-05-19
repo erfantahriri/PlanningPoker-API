@@ -53,6 +53,14 @@ class JoinRoomAPIView(APIView):
         serializer = ParticipantSerializerWithToken(instance=participant)
 
         if created:
+            layer = get_channel_layer()
+            async_to_sync(layer.group_send)(
+                'room_{room_uid}'.format(room_uid=room.uid),
+                {
+                    'type': 'add_participant',
+                    'content': ParticipantSerializer(instance=participant).data
+                }
+            )
             return Response(data=serializer.data,
                             status=status.HTTP_201_CREATED)
 
@@ -83,7 +91,16 @@ class RoomIssueAPIView(ListCreateAPIView):
     def perform_create(self, serializer):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         serializer.validated_data['room_id'] = room.id
-        serializer.save()
+        issue = serializer.save()
+
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room.uid),
+            {
+                'type': 'add_issue',
+                'content': IssueSerializer(instance=issue).data
+            }
+        )
 
 
 class RoomCurrentIssueAPIView(APIView):
