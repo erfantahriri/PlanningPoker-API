@@ -177,10 +177,21 @@ class VoteAPIView(APIView):
         vote.estimated_points = serializer.data.get('estimated_points')
         vote.save()
 
-        if created:
-            return Response(status=status.HTTP_201_CREATED)
+        serializer = VoteSerializer(instance=vote)
 
-        return Response(status=status.HTTP_200_OK)
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room_uid),
+            {
+                'type': 'add_vote',
+                'content': serializer.data
+            }
+        )
+
+        if created:
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     def get(self, request, room_uid, issue_uid):
         """Get votes of an Issue."""

@@ -38,7 +38,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    # Send message to room group
     async def current_issue(self, message):
 
         # Send message to WebSocket
@@ -50,6 +49,11 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(message))
 
     async def add_participant(self, message):
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps(message))
+
+    async def add_vote(self, message):
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps(message))
