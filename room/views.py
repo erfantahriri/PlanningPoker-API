@@ -216,6 +216,25 @@ class VoteAPIView(APIView):
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, room_uid, issue_uid):
+        """Remove votes of an Issue."""
+
+        issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
+        Vote.objects.filter(issue=issue).delete()
+        issue.vote_cards_status = settings.HIDDEN
+        issue.save()
+
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room_uid),
+            {
+                'type': 'update_issue',
+                'content': IssueSerializer(instance=issue).data
+            }
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class FlipIssueVoteCardsAPIView(APIView):
 
