@@ -1,5 +1,6 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
@@ -212,5 +213,34 @@ class VoteAPIView(APIView):
         issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
         votes = Vote.objects.filter(issue=issue)
         serializer = VoteSerializer(instance=votes, many=True)
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class FlipIssueVoteCardsAPIView(APIView):
+
+    permission_classes = [IsRoomParticipantPermission]
+
+    def post(self, request, room_uid, issue_uid):
+        """Flip an Issue's Vote cards."""
+
+        issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
+
+        if issue.vote_cards_status == settings.HIDDEN:
+            issue.vote_cards_status = settings.VISIBLE
+        else:
+            issue.vote_cards_status = settings.HIDDEN
+        issue.save()
+
+        serializer = IssueSerializer(instance=issue)
+
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room_uid),
+            {
+                'type': 'update_issue',
+                'content': serializer.data
+            }
+        )
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
