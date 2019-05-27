@@ -156,6 +156,19 @@ class IssueAPIView(RetrieveUpdateDestroyAPIView):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         return Issue.objects.filter(room=room)
 
+    def perform_update(self, serializer):
+        room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
+        issue = serializer.save()
+
+        layer = get_channel_layer()
+        async_to_sync(layer.group_send)(
+            'room_{room_uid}'.format(room_uid=room.uid),
+            {
+                'type': 'update_issue',
+                'content': IssueSerializer(instance=issue).data
+            }
+        )
+
 
 class VoteAPIView(APIView):
 
