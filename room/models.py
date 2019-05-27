@@ -28,8 +28,8 @@ class Room(BaseModel):
         ordering = ("-created",)
 
     def __str__(self):
-        """returns id as Unicode “representation” of Room object."""
-        return self.uid
+        """returns title as Unicode “representation” of Room object."""
+        return self.title
 
     @property
     def creator(self):
@@ -60,8 +60,8 @@ class Participant(BaseModel):
         unique_together = ['room', 'name']
 
     def __str__(self):
-        """returns id as Unicode “representation” of Participant object."""
-        return self.uid
+        """returns name as Unicode “representation” of Participant object."""
+        return self.name
 
     @property
     def access_token(self):
@@ -106,8 +106,8 @@ class Issue(BaseModel):
         ordering = ("-created",)
 
     def __str__(self):
-        """returns id as Unicode “representation” of Issue object."""
-        return self.uid
+        """returns title as Unicode “representation” of Issue object."""
+        return self.title
 
     @property
     def is_current(self):
