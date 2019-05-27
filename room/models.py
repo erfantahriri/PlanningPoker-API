@@ -28,8 +28,8 @@ class Room(BaseModel):
         ordering = ("-created",)
 
     def __str__(self):
-        """returns id as Unicode “representation” of Room object."""
-        return self.uid
+        """returns title as Unicode “representation” of Room object."""
+        return self.title
 
     @property
     def creator(self):
@@ -45,7 +45,8 @@ class Participant(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.CASCADE)
+                             on_delete=models.CASCADE,
+                             related_name="participants")
 
     name = models.CharField(verbose_name=_("name"), max_length=128)
 
@@ -59,8 +60,8 @@ class Participant(BaseModel):
         unique_together = ['room', 'name']
 
     def __str__(self):
-        """returns id as Unicode “representation” of Participant object."""
-        return self.uid
+        """returns name as Unicode “representation” of Participant object."""
+        return self.name
 
     @property
     def access_token(self):
@@ -77,7 +78,8 @@ class Issue(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.CASCADE)
+                             on_delete=models.CASCADE,
+                             related_name="issues")
 
     number = models.CharField(verbose_name=_("Number"), max_length=32,
                               null=True, blank=True)
@@ -104,8 +106,8 @@ class Issue(BaseModel):
         ordering = ("-created",)
 
     def __str__(self):
-        """returns id as Unicode “representation” of Issue object."""
-        return self.uid
+        """returns title as Unicode “representation” of Issue object."""
+        return self.title
 
     @property
     def is_current(self):
@@ -123,7 +125,8 @@ class Vote(BaseModel):
 
     participant = models.ForeignKey(Participant,
                                     verbose_name=_('Participant'),
-                                    on_delete=models.CASCADE)
+                                    on_delete=models.CASCADE,
+                                    related_name='votes')
 
     estimated_points = models.CharField(
         verbose_name=_("Estimated Points"),
