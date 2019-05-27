@@ -45,7 +45,8 @@ class Participant(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.CASCADE)
+                             on_delete=models.CASCADE,
+                             related_name="participants")
 
     name = models.CharField(verbose_name=_("name"), max_length=128)
 
@@ -77,7 +78,8 @@ class Issue(BaseModel):
     """
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
-                             on_delete=models.CASCADE)
+                             on_delete=models.CASCADE,
+                             related_name="issues")
 
     number = models.CharField(verbose_name=_("Number"), max_length=32,
                               null=True, blank=True)
@@ -123,7 +125,8 @@ class Vote(BaseModel):
 
     participant = models.ForeignKey(Participant,
                                     verbose_name=_('Participant'),
-                                    on_delete=models.CASCADE)
+                                    on_delete=models.CASCADE,
+                                    related_name='votes')
 
     estimated_points = models.CharField(
         verbose_name=_("Estimated Points"),
