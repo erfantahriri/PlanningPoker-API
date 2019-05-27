@@ -141,7 +141,8 @@ SUID_LENGTH = 10
 
 JWT_SECRET_KEY = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
 
-# Story Points settings
+# choices settings
+
 ZERO = '0'
 HALF = '1/2'
 ONE = '1'
@@ -154,6 +155,7 @@ TWENTY = '20'
 FORTY = '40'
 HUNDRED = '100'
 UNSURE = '?'
+
 STORY_POINT_CHOICES = (
     (ZERO, '0'),
     (HALF, '1/2'),
@@ -173,11 +175,19 @@ STORY_POINT_CHOICES_LIST = [
     HUNDRED, UNSURE,
 ]
 
+HIDDEN = 'hidden'
+VISIBLE = 'visible'
+
+ISSUE_VOTE_CARDS_STATUS_CHOICES = (
+    (HIDDEN, 'hidden'),
+    (VISIBLE, 'visible'),
+)
+
 # CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 
 
-# Channels
+# Channels settings
 ASGI_APPLICATION = 'planningpoker.routing.application'
 CHANNEL_LAYERS = {
     'default': {

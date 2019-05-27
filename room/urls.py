@@ -15,4 +15,6 @@ urlpatterns = [
          views.IssueAPIView.as_view()),
     path('<str:room_uid>/issues/<str:issue_uid>/votes',
          views.VoteAPIView.as_view()),
+    path('<str:room_uid>/issues/<str:issue_uid>/votes/flip',
+         views.FlipIssueVoteCardsAPIView.as_view()),
 ]

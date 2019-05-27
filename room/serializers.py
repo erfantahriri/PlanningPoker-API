@@ -95,7 +95,7 @@ class IssueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Issue
         fields = ('uid', 'number', 'title', 'estimated_points',
-                  'is_current', 'votes', 'created',)
+                  'is_current', 'votes', 'vote_cards_status', 'created',)
 
 
 class SubmitVoteInputSerializer(serializers.Serializer):

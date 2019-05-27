@@ -84,6 +84,13 @@ class Issue(BaseModel):
 
     title = models.TextField(verbose_name=_("Title"))
 
+    vote_cards_status = models.CharField(
+        verbose_name=_("Vote Cards Status"),
+        max_length=32,
+        choices=settings.ISSUE_VOTE_CARDS_STATUS_CHOICES,
+        default=settings.HIDDEN
+    )
+
     estimated_points = models.CharField(
         verbose_name=_("Estimated Points"),
         max_length=32,
