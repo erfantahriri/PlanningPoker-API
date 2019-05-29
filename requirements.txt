@@ -6,3 +6,4 @@ PyJWT==1.7.1
 drf-yasg==1.15.0
 django-cors-headers==3.0.0
 channels==2.2.0
+channels-redis==2.4.0
