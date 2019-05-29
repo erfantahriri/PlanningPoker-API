@@ -4,6 +4,7 @@ This is an back-end API service for PlanningPoker application
 This application is created to handle PlanningPoker estimating sessions of scrum agile methodology
 
 ## Addresses
+
 * [PlanningPoker API Doc](http://82.102.10.119:8080/redoc/) 
 * [PlanningPoker API](http://82.102.10.119:8080) 
 * [PlanningPoker Website](http://scrumplanning.ir)
@@ -31,6 +32,13 @@ $ export PLANNING_POKER_DB_PASSWORD='db_password'
 $ export PLANNING_POKER_DB_HOST='127.0.0.1'
 $ export PLANNING_POKER_DJANGO_SECRET_KEY='django_secret_key'
 $ export PLANNING_POKER_SUID_ALPHABET='suid_alphabet'
+
+```
+
+And We use channels and channels_layer for implement WebSocket that uses Redis as its backing store. So you should [install Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/) first and after that start a redis server with running this command:
+
+```sh
+$ docker run -p 6379:6379 -d redis:2.8
 
 ```
 
