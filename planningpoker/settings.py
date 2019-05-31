@@ -88,6 +88,9 @@ DATABASES = {
         'USER': os.environ.get('PLANNING_POKER_DB_USER'),
         'PASSWORD': os.environ.get('PLANNING_POKER_DB_PASSWORD'),
         'HOST': os.environ.get('PLANNING_POKER_DB_HOST'),
+        'TEST': {
+            'NAME': 'test_db',
+        },
     }
 }
 
