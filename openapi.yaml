@@ -1,0 +1,724 @@
+openapi: 3.0.3
+
+info:
+  title: Planning Poker API
+  version: v1
+  description: >
+    REST + WebSocket API for Planning Poker estimation sessions.
+
+    **Authentication** – endpoints marked with 🔒 require a JWT token passed in
+    the `Authorization` header (no "Bearer" prefix). The token is returned in
+    the `access_token` field when creating a room (`POST /v1/rooms/`) or
+    joining one (`POST /v1/rooms/{room_uid}/join`).
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+# ── Security scheme ──────────────────────────────────────────────────────────
+
+components:
+  securitySchemes:
+    JWTAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: >
+        JWT (HS256) containing `participant_uid` and `room_uid`.
+        Pass the raw token – no "Bearer" prefix.
+
+  # ── Reusable schemas ───────────────────────────────────────────────────────
+
+  schemas:
+
+    # Story-point choices shared across Issue and Vote
+    StoryPoints:
+      type: string
+      nullable: true
+      enum: ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?']
+
+    # ── Participant ──
+    Participant:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+          example: aB3dEfGhIj
+        name:
+          type: string
+          maxLength: 128
+          example: Alice
+        created:
+          type: string
+          readOnly: true
+          example: '2024-01-15T10:30:00.000000Z'
+
+    ParticipantWithToken:
+      allOf:
+        - $ref: '#/components/schemas/Participant'
+        - type: object
+          properties:
+            access_token:
+              type: string
+              readOnly: true
+              description: JWT to include in the Authorization header for subsequent requests.
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    # ── Room ──
+    Room:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+          example: xK9mNpQrSt
+        title:
+          type: string
+          maxLength: 128
+          example: Sprint 42 Planning
+        description:
+          type: string
+          example: Backend team estimation session
+        updated:
+          type: string
+          format: date-time
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - title
+        - description
+
+    RoomCreated:
+      allOf:
+        - $ref: '#/components/schemas/Room'
+        - type: object
+          properties:
+            creator:
+              $ref: '#/components/schemas/ParticipantWithToken'
+              readOnly: true
+
+    RoomCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 128
+          example: Sprint 42 Planning
+        description:
+          type: string
+          example: Backend team estimation session
+        creator_name:
+          type: string
+          maxLength: 128
+          example: Alice
+      required:
+        - title
+        - description
+        - creator_name
+
+    PaginatedRoomList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 42
+        next:
+          type: string
+          format: uri
+          nullable: true
+          example: 'http://localhost:8000/v1/rooms/?page=2'
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+
+    # ── Vote ──
+    Vote:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+          example: Uv1wXyZaBc
+        participant:
+          $ref: '#/components/schemas/Participant'
+        estimated_points:
+          $ref: '#/components/schemas/StoryPoints'
+        created:
+          type: string
+          readOnly: true
+          example: '2024-01-15T10:35:00.000000Z'
+
+    VoteSubmitRequest:
+      type: object
+      properties:
+        estimated_points:
+          $ref: '#/components/schemas/StoryPoints'
+      required:
+        - estimated_points
+
+    # ── Issue ──
+    Issue:
+      type: object
+      properties:
+        uid:
+          type: string
+          readOnly: true
+          example: Cd2eF3gHi4
+        number:
+          type: string
+          maxLength: 32
+          nullable: true
+          example: 'APP-123'
+        title:
+          type: string
+          example: As a user I can log in
+        estimated_points:
+          $ref: '#/components/schemas/StoryPoints'
+        is_current:
+          type: boolean
+          readOnly: true
+          description: True when this issue is the room's active current_issue.
+          example: true
+        vote_cards_status:
+          type: string
+          readOnly: true
+          enum: [hidden, visible]
+          default: hidden
+          description: hidden = votes not yet revealed; visible = cards flipped.
+        votes:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/Vote'
+        created:
+          type: string
+          readOnly: true
+          example: '2024-01-15T10:32:00.000000Z'
+      required:
+        - title
+
+    IssueCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: As a user I can log in
+        number:
+          type: string
+          maxLength: 32
+          nullable: true
+          example: 'APP-123'
+      required:
+        - title
+
+    IssueUpdateRequest:
+      type: object
+      description: All fields are optional (PATCH semantics).
+      properties:
+        title:
+          type: string
+        number:
+          type: string
+          maxLength: 32
+          nullable: true
+        estimated_points:
+          $ref: '#/components/schemas/StoryPoints'
+
+    SetCurrentIssueRequest:
+      type: object
+      properties:
+        issue_uid:
+          type: string
+          example: Cd2eF3gHi4
+      required:
+        - issue_uid
+
+    # ── Errors ──
+    NotFound:
+      type: object
+      properties:
+        details:
+          type: string
+          example: "This room doesn't have a current issue."
+
+    ValidationError:
+      type: object
+      description: Field-level validation errors keyed by field name.
+      example:
+        title: ['This Room title is already Taken.']
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+
+paths:
+
+  /v1/rooms/:
+    get:
+      summary: List rooms
+      operationId: listRooms
+      tags: [Rooms]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: Page number (page size = 100).
+      responses:
+        '200':
+          description: Paginated list of rooms.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoomList'
+
+    post:
+      summary: Create a room
+      operationId: createRoom
+      tags: [Rooms]
+      description: >
+        Creates a room and its creator participant in a single request.
+        The response includes the creator's `access_token` – store it for
+        use in subsequent authenticated requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomCreateRequest'
+      responses:
+        '201':
+          description: Room created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomCreated'
+        '400':
+          description: Validation error (e.g. title already taken).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /v1/rooms/{room_uid}/join:
+    post:
+      summary: Join a room
+      operationId: joinRoom
+      tags: [Rooms]
+      description: >
+        Adds a participant to the room by name. If a participant with that name
+        already exists, their existing token is returned (`200`). A new
+        participant returns `201`. Store the `access_token` for authenticated
+        requests.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 128
+                  example: Bob
+              required:
+                - name
+      responses:
+        '201':
+          description: New participant created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantWithToken'
+        '200':
+          description: Participant already exists – existing token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantWithToken'
+        '404':
+          description: Room not found.
+
+  /v1/rooms/{room_uid}/participants:
+    get:
+      summary: List participants 🔒
+      operationId: listParticipants
+      tags: [Participants]
+      security:
+        - JWTAuth: []
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      responses:
+        '200':
+          description: List of all participants in the room (unpaginated).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Participant'
+        '403':
+          description: Invalid or missing token.
+
+  /v1/rooms/{room_uid}/issues:
+    get:
+      summary: List issues 🔒
+      operationId: listIssues
+      tags: [Issues]
+      security:
+        - JWTAuth: []
+      description: Returns all issues for the room, each including their votes (unpaginated).
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      responses:
+        '200':
+          description: List of issues with nested votes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+        '403':
+          description: Invalid or missing token.
+
+    post:
+      summary: Create an issue 🔒
+      operationId: createIssue
+      tags: [Issues]
+      security:
+        - JWTAuth: []
+      description: >
+        Creates a new issue in the room. Broadcasts an `add_issue` WebSocket
+        event to all connected clients.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCreateRequest'
+      responses:
+        '201':
+          description: Issue created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '403':
+          description: Invalid or missing token.
+
+  /v1/rooms/{room_uid}/current_issue:
+    get:
+      summary: Get current issue
+      operationId: getCurrentIssue
+      tags: [Issues]
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      responses:
+        '200':
+          description: The room's currently active issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '404':
+          description: No current issue set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+              example:
+                details: "This room doesn't have a current issue."
+
+    post:
+      summary: Set current issue
+      operationId: setCurrentIssue
+      tags: [Issues]
+      description: >
+        Sets the room's active issue. Broadcasts a `current_issue` WebSocket
+        event to all connected clients.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetCurrentIssueRequest'
+      responses:
+        '200':
+          description: Current issue updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '404':
+          description: Room or issue not found.
+
+  /v1/rooms/{room_uid}/issues/{issue_uid}:
+    get:
+      summary: Get an issue 🔒
+      operationId: getIssue
+      tags: [Issues]
+      security:
+        - JWTAuth: []
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      responses:
+        '200':
+          description: Issue with nested votes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '403':
+          description: Invalid or missing token.
+        '404':
+          description: Issue not found.
+
+    patch:
+      summary: Update an issue 🔒
+      operationId: updateIssue
+      tags: [Issues]
+      security:
+        - JWTAuth: []
+      description: >
+        Partially updates an issue (title, number, estimated_points). Broadcasts
+        an `update_issue` WebSocket event to all connected clients.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueUpdateRequest'
+      responses:
+        '200':
+          description: Updated issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Validation error.
+        '403':
+          description: Invalid or missing token.
+        '404':
+          description: Issue not found.
+
+    delete:
+      summary: Delete an issue 🔒
+      operationId: deleteIssue
+      tags: [Issues]
+      security:
+        - JWTAuth: []
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      responses:
+        '204':
+          description: Issue deleted.
+        '403':
+          description: Invalid or missing token.
+        '404':
+          description: Issue not found.
+
+  /v1/rooms/{room_uid}/issues/{issue_uid}/votes:
+    get:
+      summary: Get votes for an issue 🔒
+      operationId: getVotes
+      tags: [Votes]
+      security:
+        - JWTAuth: []
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      responses:
+        '200':
+          description: All votes for the issue.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vote'
+        '403':
+          description: Invalid or missing token.
+
+    post:
+      summary: Submit or update a vote 🔒
+      operationId: submitVote
+      tags: [Votes]
+      security:
+        - JWTAuth: []
+      description: >
+        Submits or updates the authenticated participant's vote for an issue.
+        A participant can only have one vote per issue – re-submitting overwrites
+        the previous value. Broadcasts an `add_vote` WebSocket event.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteSubmitRequest'
+      responses:
+        '201':
+          description: New vote created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vote'
+        '200':
+          description: Existing vote updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vote'
+        '400':
+          description: Invalid estimated_points value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '403':
+          description: Invalid or missing token.
+
+    delete:
+      summary: Clear all votes for an issue 🔒
+      operationId: clearVotes
+      tags: [Votes]
+      security:
+        - JWTAuth: []
+      description: >
+        Deletes all votes for the issue and resets `vote_cards_status` to
+        `hidden`. Broadcasts an `update_issue` WebSocket event.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      responses:
+        '204':
+          description: All votes deleted.
+        '403':
+          description: Invalid or missing token.
+
+  /v1/rooms/{room_uid}/issues/{issue_uid}/votes/flip:
+    post:
+      summary: Flip vote cards 🔒
+      operationId: flipVoteCards
+      tags: [Votes]
+      security:
+        - JWTAuth: []
+      description: >
+        Toggles `vote_cards_status` between `hidden` and `visible`.
+        Broadcasts an `update_issue` WebSocket event so all clients
+        can show/hide the cards simultaneously.
+      parameters:
+        - $ref: '#/components/parameters/room_uid'
+        - $ref: '#/components/parameters/issue_uid'
+      responses:
+        '200':
+          description: Updated issue with new vote_cards_status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '403':
+          description: Invalid or missing token.
+
+  # ── Reusable parameters ───────────────────────────────────────────────────
+
+  parameters: {}
+
+# Top-level reusable parameters (referenced above)
+x-room-uid-parameter: &room_uid_param
+  name: room_uid
+  in: path
+  required: true
+  schema:
+    type: string
+  example: xK9mNpQrSt
+
+x-issue-uid-parameter: &issue_uid_param
+  name: issue_uid
+  in: path
+  required: true
+  schema:
+    type: string
+  example: Cd2eF3gHi4
+
+# Note: OpenAPI 3.0 requires parameters in the components section, not inline.
+# See the components.parameters section below.
+
+components:
+  parameters:
+    room_uid:
+      name: room_uid
+      in: path
+      required: true
+      schema:
+        type: string
+        example: xK9mNpQrSt
+    issue_uid:
+      name: issue_uid
+      in: path
+      required: true
+      schema:
+        type: string
+        example: Cd2eF3gHi4
+
+# ── WebSocket ─────────────────────────────────────────────────────────────────
+#
+# Endpoint:  ws://<host>/ws/rooms/{room_uid}/
+#
+# Connect to receive real-time room events. No authentication is enforced at
+# the WebSocket level – connect after obtaining a valid access_token.
+#
+# All messages sent by the server follow this envelope:
+#
+#   { "type": "<event_type>", "content": <object> }
+#
+# ┌─────────────────────┬──────────────────────────────────────────────────────┐
+# │ type                │ content schema   │ triggered by                      │
+# ├─────────────────────┼──────────────────┼───────────────────────────────────┤
+# │ add_participant     │ Participant       │ POST /rooms/{uid}/join (new only) │
+# │ add_issue           │ Issue            │ POST /rooms/{uid}/issues           │
+# │ current_issue       │ Issue            │ POST /rooms/{uid}/current_issue   │
+# │ add_vote            │ Vote             │ POST /rooms/{uid}/issues/{uid}/votes│
+# │ update_issue        │ Issue            │ PATCH /issues/{uid}               │
+# │                     │                  │ DELETE /votes (cards reset)       │
+# │                     │                  │ POST /votes/flip                  │
+# └─────────────────────┴──────────────────┴───────────────────────────────────┘
+#
+# Example message (add_vote):
+#   {
+#     "type": "add_vote",
+#     "content": {
+#       "uid": "Uv1wXyZaBc",
+#       "participant": { "uid": "aB3dEfGhIj", "name": "Alice", "created": "..." },
+#       "estimated_points": "5",
+#       "created": "..."
+#     }
+#   }
