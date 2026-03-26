@@ -142,7 +142,10 @@ REST_FRAMEWORK = {
 SUID_ALPHABET = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
 SUID_LENGTH = 10
 
-JWT_SECRET_KEY = os.environ.get('PLANNING_POKER_SUID_ALPHABET')
+JWT_SECRET_KEY = (
+    os.environ.get('PLANNING_POKER_JWT_SECRET_KEY')
+    or os.environ.get('PLANNING_POKER_SUID_ALPHABET')
+)
 
 # choices settings
 

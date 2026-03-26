@@ -22,7 +22,8 @@ class IsRoomParticipantPermission(permissions.BasePermission):
             if request.participant.room.uid != view.kwargs.get('room_uid'):
                 return False
 
-        except (KeyError, InvalidSignatureError, DecodeError):
+        except (KeyError, InvalidSignatureError, DecodeError,
+                Participant.DoesNotExist):
             return False
 
         return True
