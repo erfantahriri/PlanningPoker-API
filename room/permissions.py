@@ -15,7 +15,8 @@ class IsRoomParticipantPermission(permissions.BasePermission):
 
         try:
             payload = jwt.decode(request.META.get('HTTP_AUTHORIZATION'),
-                                 key=settings.JWT_SECRET_KEY)
+                                 key=settings.JWT_SECRET_KEY,
+                                 algorithms=["HS256"])
             request.participant = Participant.objects.get(
                 uid=payload.get('participant_uid')
             )

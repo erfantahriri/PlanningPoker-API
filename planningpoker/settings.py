@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'planningpoker.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('PLANNING_POKER_DB_NAME'),
         'USER': os.environ.get('PLANNING_POKER_DB_USER'),
         'PASSWORD': os.environ.get('PLANNING_POKER_DB_PASSWORD'),
@@ -123,9 +123,9 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
@@ -189,8 +189,7 @@ ISSUE_VOTE_CARDS_STATUS_CHOICES = (
     (VISIBLE, 'visible'),
 )
 
-# CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Channels settings

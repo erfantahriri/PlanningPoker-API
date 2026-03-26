@@ -67,7 +67,8 @@ class Participant(BaseModel):
     def access_token(self):
         return jwt.encode(
             payload={"participant_uid": self.uid, "room_uid": self.room.uid},
-            key=settings.JWT_SECRET_KEY
+            key=settings.JWT_SECRET_KEY,
+            algorithm="HS256"
         )
 
 
