@@ -25,11 +25,9 @@ class IssueInlineAdmin(admin.TabularInline):
 
 class RoomAdmin(admin.ModelAdmin):
 
-    exclude = ()
     list_display = ('uid', 'title', 'description', 'issues_count',
                     'participants_count', 'updated', 'created',)
     readonly_fields = ('uid', 'updated', 'created',)
-
     inlines = [ParticipantInlineAdmin, IssueInlineAdmin]
 
     @staticmethod
@@ -45,7 +43,6 @@ class RoomAdmin(admin.ModelAdmin):
 
 class ParticipantAdmin(admin.ModelAdmin):
 
-    exclude = ()
     list_display = ('uid', 'room', 'name', 'votes_count', 'is_creator',
                     'updated', 'created',)
     readonly_fields = ('uid', 'updated', 'created',)
@@ -58,19 +55,25 @@ class ParticipantAdmin(admin.ModelAdmin):
 
 class IssueAdmin(admin.ModelAdmin):
 
-    exclude = ()
     list_display = ('uid', 'room', 'number', 'title', 'estimated_points',
                     'vote_cards_status', 'votes_count', 'updated', 'created',)
     readonly_fields = ('uid', 'updated', 'created',)
+    inlines = [VotesInlineAdmin]
 
     @staticmethod
     def votes_count(obj):
         """returns number of Votes for an Issue"""
         return obj.votes.count()
 
-    inlines = [VotesInlineAdmin]
+
+class VoteAdmin(admin.ModelAdmin):
+
+    list_display = ('uid', 'issue', 'participant', 'estimated_points',
+                    'updated', 'created',)
+    readonly_fields = ('uid', 'updated', 'created',)
 
 
 admin.site.register(Room, RoomAdmin)
 admin.site.register(Participant, ParticipantAdmin)
 admin.site.register(Issue, IssueAdmin)
+admin.site.register(Vote, VoteAdmin)

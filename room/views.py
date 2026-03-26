@@ -1,5 +1,3 @@
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.conf import settings
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
@@ -15,7 +13,8 @@ from room.serializers import (RoomSerializer, JoinRoomInputSerializer,
                               ParticipantSerializer, IssueSerializer,
                               SubmitVoteInputSerializer, VoteSerializer,
                               RoomSerializerWithToken,
-                              SubmitRoomCurrentIsseueInputSerializer)
+                              SubmitRoomCurrentIssueInputSerializer)
+from room.utils import broadcast_room_event
 
 
 class RoomAPIView(ListCreateAPIView):
@@ -54,13 +53,9 @@ class JoinRoomAPIView(APIView):
         serializer = ParticipantSerializerWithToken(instance=participant)
 
         if created:
-            layer = get_channel_layer()
-            async_to_sync(layer.group_send)(
-                'room_{room_uid}'.format(room_uid=room.uid),
-                {
-                    'type': 'add_participant',
-                    'content': ParticipantSerializer(instance=participant).data
-                }
+            broadcast_room_event(
+                room.uid, 'add_participant',
+                ParticipantSerializer(instance=participant).data
             )
             return Response(data=serializer.data,
                             status=status.HTTP_201_CREATED)
@@ -87,20 +82,18 @@ class RoomIssueAPIView(ListCreateAPIView):
 
     def get_queryset(self):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
-        return Issue.objects.filter(room=room)
+        return Issue.objects.filter(room=room).prefetch_related(
+            'votes', 'votes__participant'
+        )
 
     def perform_create(self, serializer):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         serializer.validated_data['room_id'] = room.id
         issue = serializer.save()
 
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room.uid),
-            {
-                'type': 'add_issue',
-                'content': IssueSerializer(instance=issue).data
-            }
+        broadcast_room_event(
+            room.uid, 'add_issue',
+            IssueSerializer(instance=issue).data
         )
 
 
@@ -113,9 +106,7 @@ class RoomCurrentIssueAPIView(APIView):
 
         if not room.current_issue:
             return Response(
-                data={
-                    "details": "This room is don't have any current issue now"
-                },
+                data={"details": "This room doesn't have a current issue."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -126,7 +117,7 @@ class RoomCurrentIssueAPIView(APIView):
         """Set Room's current Issue."""
 
         room = get_object_or_404(Room, uid=room_uid)
-        serializer = SubmitRoomCurrentIsseueInputSerializer(data=request.data)
+        serializer = SubmitRoomCurrentIssueInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         issue = get_object_or_404(Issue, uid=serializer.data.get('issue_uid'),
                                   room__uid=room.uid)
@@ -134,15 +125,7 @@ class RoomCurrentIssueAPIView(APIView):
         room.save()
 
         serializer = IssueSerializer(instance=issue)
-
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room.uid),
-            {
-                'type': 'current_issue',
-                'content': serializer.data
-            }
-        )
+        broadcast_room_event(room.uid, 'current_issue', serializer.data)
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
@@ -155,19 +138,17 @@ class IssueAPIView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
-        return Issue.objects.filter(room=room)
+        return Issue.objects.filter(room=room).prefetch_related(
+            'votes', 'votes__participant'
+        )
 
     def perform_update(self, serializer):
         room = get_object_or_404(Room, uid=self.kwargs.get('room_uid'))
         issue = serializer.save()
 
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room.uid),
-            {
-                'type': 'update_issue',
-                'content': IssueSerializer(instance=issue).data
-            }
+        broadcast_room_event(
+            room.uid, 'update_issue',
+            IssueSerializer(instance=issue).data
         )
 
 
@@ -192,15 +173,7 @@ class VoteAPIView(APIView):
         vote.save()
 
         serializer = VoteSerializer(instance=vote)
-
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room_uid),
-            {
-                'type': 'add_vote',
-                'content': serializer.data
-            }
-        )
+        broadcast_room_event(room_uid, 'add_vote', serializer.data)
 
         if created:
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
@@ -211,7 +184,7 @@ class VoteAPIView(APIView):
         """Get votes of an Issue."""
 
         issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
-        votes = Vote.objects.filter(issue=issue)
+        votes = Vote.objects.filter(issue=issue).select_related('participant')
         serializer = VoteSerializer(instance=votes, many=True)
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -224,13 +197,9 @@ class VoteAPIView(APIView):
         issue.vote_cards_status = settings.HIDDEN
         issue.save()
 
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room_uid),
-            {
-                'type': 'update_issue',
-                'content': IssueSerializer(instance=issue).data
-            }
+        broadcast_room_event(
+            room_uid, 'update_issue',
+            IssueSerializer(instance=issue).data
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -252,14 +221,6 @@ class FlipIssueVoteCardsAPIView(APIView):
         issue.save()
 
         serializer = IssueSerializer(instance=issue)
-
-        layer = get_channel_layer()
-        async_to_sync(layer.group_send)(
-            'room_{room_uid}'.format(room_uid=room_uid),
-            {
-                'type': 'update_issue',
-                'content': serializer.data
-            }
-        )
+        broadcast_room_event(room_uid, 'update_issue', serializer.data)
 
         return Response(data=serializer.data, status=status.HTTP_200_OK)
