@@ -1,4 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
+from datetime import datetime, timezone
 import json
 
 
@@ -22,10 +23,26 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         message = json.loads(text_data)
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {'type': 'current_issue', 'content': message['content']}
-        )
+        msg_type = message.get('type')
+
+        if msg_type == 'chat_message':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'content': {
+                        'sender': message['content']['sender'],
+                        'senderUid': message['content'].get('senderUid'),
+                        'text': message['content']['text'],
+                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                    },
+                }
+            )
+        else:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {'type': 'current_issue', 'content': message['content']}
+            )
 
     async def _forward_message(self, message):
         await self.send(text_data=json.dumps(message))
@@ -43,4 +60,7 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self._forward_message(message)
 
     async def update_issue(self, message):
+        await self._forward_message(message)
+
+    async def chat_message(self, message):
         await self._forward_message(message)
