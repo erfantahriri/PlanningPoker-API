@@ -224,6 +224,31 @@ class VoteAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ParticipantSelfUpdateAPIView(APIView):
+    """Allow a participant to update their own name."""
+
+    permission_classes = [IsRoomParticipantPermission]
+
+    def patch(self, request, room_uid, participant_uid):
+        if request.participant.uid != participant_uid:
+            return Response(
+                {"detail": "You can only update your own name."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        new_name = request.data.get("name", "").strip()
+        if not new_name:
+            return Response({"detail": "Name cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant = request.participant
+        participant.name = new_name
+        participant.save()
+        localStorage_name = new_name  # returned so frontend can update localStorage
+
+        serializer = ParticipantSerializer(instance=participant)
+        broadcast_room_event(room_uid, 'rename_participant', serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class RoomInfoAPIView(APIView):
     """Public endpoint returning basic room info (no auth required)."""
 
