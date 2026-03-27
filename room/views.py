@@ -258,6 +258,7 @@ class RoomInfoAPIView(APIView):
             "uid": room.uid,
             "title": room.title,
             "is_private": room.is_private,
+            "card_set": room.card_set,
         })
 
 

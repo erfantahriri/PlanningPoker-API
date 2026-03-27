@@ -38,6 +38,34 @@ class RoomConsumer(AsyncWebsocketConsumer):
                     },
                 }
             )
+        elif msg_type == 'timer_start':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'timer_start',
+                    'content': {
+                        'duration': message['content']['duration'],
+                        'started_at': datetime.now(timezone.utc).isoformat(),
+                    },
+                }
+            )
+        elif msg_type == 'timer_stop':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {'type': 'timer_stop', 'content': {}}
+            )
+        elif msg_type == 'reaction':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'reaction',
+                    'content': {
+                        'participantName': message['content'].get('participantName', ''),
+                        'emoji': message['content']['emoji'],
+                        'id': datetime.now(timezone.utc).isoformat() + message['content'].get('participantName', ''),
+                    },
+                }
+            )
         else:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -56,6 +84,9 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def add_participant(self, message):
         await self._forward_message(message)
 
+    async def rename_participant(self, message):
+        await self._forward_message(message)
+
     async def add_vote(self, message):
         await self._forward_message(message)
 
@@ -63,4 +94,13 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self._forward_message(message)
 
     async def chat_message(self, message):
+        await self._forward_message(message)
+
+    async def timer_start(self, message):
+        await self._forward_message(message)
+
+    async def timer_stop(self, message):
+        await self._forward_message(message)
+
+    async def reaction(self, message):
         await self._forward_message(message)

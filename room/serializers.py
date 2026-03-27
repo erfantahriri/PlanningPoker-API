@@ -26,7 +26,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'is_private', 'participant_count', 'issue_count', 'updated', 'created',)
+        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'participant_count', 'issue_count', 'updated', 'created',)
 
     def get_participant_count(self, obj):
         return obj.participants.count()
@@ -46,7 +46,7 @@ class RoomSerializerWithToken(RoomSerializer):
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'is_private', 'creator_name', 'password', 'creator',
+        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'creator_name', 'password', 'creator',
                   'updated', 'created',)
 
     def validate_title(self, value):
