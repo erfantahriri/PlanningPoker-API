@@ -13,7 +13,7 @@ class ParticipantSerializerWithToken(serializers.ModelSerializer):
 
     class Meta:
         model = Participant
-        fields = ('uid', 'name', 'access_token', 'created',)
+        fields = ('uid', 'name', 'role', 'access_token', 'created',)
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -53,6 +53,9 @@ class JoinRoomInputSerializer(serializers.Serializer):
     """Input serializer for join room."""
 
     name = serializers.CharField(required=True)
+    role = serializers.ChoiceField(
+        choices=['voter', 'spectator'], default='voter', required=False
+    )
 
 
 class SubmitRoomCurrentIssueInputSerializer(serializers.Serializer):
@@ -69,7 +72,7 @@ class ParticipantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Participant
-        fields = ('uid', 'name', 'created',)
+        fields = ('uid', 'name', 'role', 'created',)
 
 
 class VoteSerializer(serializers.ModelSerializer):

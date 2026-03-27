@@ -48,6 +48,7 @@ class JoinRoomAPIView(APIView):
         participant, created = Participant.objects.get_or_create(
             room=room,
             name=serializer.data.get("name"),
+            defaults={"role": serializer.data.get("role", "voter")},
         )
 
         serializer = ParticipantSerializerWithToken(instance=participant)
@@ -158,6 +159,12 @@ class VoteAPIView(APIView):
 
     def post(self, request, room_uid, issue_uid):
         """Submit a vote for a participant."""
+
+        if request.participant.role == 'spectator':
+            return Response(
+                data={"detail": "Spectators cannot vote."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         issue = get_object_or_404(Issue, uid=issue_uid, room__uid=room_uid)
 
