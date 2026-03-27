@@ -175,6 +175,20 @@ STORY_POINT_CHOICES = (
     (FORTY, '40'),
     (HUNDRED, '100'),
     (UNSURE, '?'),
+    # Fibonacci extras
+    ('21', '21'),
+    ('34', '34'),
+    ('55', '55'),
+    # T-shirt sizes
+    ('XS', 'XS'),
+    ('S', 'S'),
+    ('M', 'M'),
+    ('L', 'L'),
+    ('XL', 'XL'),
+    ('XXL', 'XXL'),
+    # Symbols
+    ('☕', '☕'),
+    ('½', '½'),
 )
 STORY_POINT_CHOICES_LIST = [
     ZERO, HALF, ONE, TWO, THREE, FIVE, EIGHT, THIRTEEN, TWENTY, FORTY,
