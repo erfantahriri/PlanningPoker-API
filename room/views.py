@@ -236,6 +236,26 @@ class RoomInfoAPIView(APIView):
         })
 
 
+class RoomSummaryAPIView(APIView):
+    """Public endpoint returning the full session summary (no auth required)."""
+
+    def get(self, request, room_uid):
+        from room.serializers import IssueSerializer, ParticipantSerializer
+        room = get_object_or_404(Room, uid=room_uid)
+        issues = Issue.objects.filter(room=room).prefetch_related(
+            'votes', 'votes__participant'
+        )
+        participants = Participant.objects.filter(room=room)
+        return Response({
+            "uid": room.uid,
+            "title": room.title,
+            "description": room.description,
+            "created": str(room.created),
+            "participants": ParticipantSerializer(participants, many=True).data,
+            "issues": IssueSerializer(issues, many=True).data,
+        })
+
+
 class FlipIssueVoteCardsAPIView(APIView):
 
     permission_classes = [IsRoomParticipantPermission]
