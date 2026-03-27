@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
@@ -23,6 +24,9 @@ class RoomAPIView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         creator_name = serializer.validated_data.pop("creator_name")
+        raw_password = serializer.validated_data.pop("password", "")
+        if raw_password:
+            serializer.validated_data["password"] = make_password(raw_password)
         room = serializer.save()
         Participant.objects.create(
             room=room,
@@ -44,6 +48,14 @@ class JoinRoomAPIView(APIView):
         room = get_object_or_404(Room, uid=room_uid)
         serializer = JoinRoomInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        if room.is_private:
+            provided = serializer.data.get("password", "")
+            if not provided or not check_password(provided, room.password):
+                return Response(
+                    {"detail": "Incorrect password."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         participant, created = Participant.objects.get_or_create(
             room=room,
@@ -210,6 +222,18 @@ class VoteAPIView(APIView):
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoomInfoAPIView(APIView):
+    """Public endpoint returning basic room info (no auth required)."""
+
+    def get(self, request, room_uid):
+        room = get_object_or_404(Room, uid=room_uid)
+        return Response({
+            "uid": room.uid,
+            "title": room.title,
+            "is_private": room.is_private,
+        })
 
 
 class FlipIssueVoteCardsAPIView(APIView):
