@@ -21,10 +21,18 @@ class RoomSerializer(serializers.ModelSerializer):
 
     uid = serializers.CharField(read_only=True)
     created = serializers.CharField(read_only=True)
+    participant_count = serializers.SerializerMethodField()
+    issue_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'updated', 'created',)
+        fields = ('uid', 'title', 'description', 'participant_count', 'issue_count', 'updated', 'created',)
+
+    def get_participant_count(self, obj):
+        return obj.participants.count()
+
+    def get_issue_count(self, obj):
+        return obj.issues.count()
 
 
 class RoomSerializerWithToken(RoomSerializer):
