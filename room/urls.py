@@ -4,6 +4,7 @@ from room import views
 
 urlpatterns = [
     path('', views.RoomAPIView.as_view(), name='rooms'),
+    path('<str:room_uid>', views.RoomUpdateAPIView.as_view(), name='room_update'),
     path('<str:room_uid>/info', views.RoomInfoAPIView.as_view(), name='room_info'),
     path('<str:room_uid>/summary', views.RoomSummaryAPIView.as_view(), name='room_summary'),
     path('<str:room_uid>/join', views.JoinRoomAPIView.as_view(),

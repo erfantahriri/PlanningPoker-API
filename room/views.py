@@ -24,6 +24,7 @@ class RoomAPIView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         creator_name = serializer.validated_data.pop("creator_name")
+        creator_role = serializer.validated_data.pop("creator_role", Participant.DEV)
         raw_password = serializer.validated_data.pop("password", "")
         if raw_password:
             serializer.validated_data["password"] = make_password(raw_password)
@@ -31,7 +32,8 @@ class RoomAPIView(ListCreateAPIView):
         Participant.objects.create(
             room=room,
             name=creator_name,
-            is_creator=True
+            is_creator=True,
+            role=creator_role,
         )
 
     def get_serializer_class(self):
@@ -57,11 +59,16 @@ class JoinRoomAPIView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+        requested_role = serializer.data.get("role", Participant.DEV)
         participant, created = Participant.objects.get_or_create(
             room=room,
             name=serializer.data.get("name"),
-            defaults={"role": serializer.data.get("role", "voter")},
+            defaults={"role": requested_role},
         )
+
+        if not created and participant.role != requested_role:
+            participant.role = requested_role
+            participant.save()
 
         serializer = ParticipantSerializerWithToken(instance=participant)
 
@@ -172,9 +179,9 @@ class VoteAPIView(APIView):
     def post(self, request, room_uid, issue_uid):
         """Submit a vote for a participant."""
 
-        if request.participant.role == 'spectator':
+        if request.participant.role not in Participant.VOTING_ROLES:
             return Response(
-                data={"detail": "Spectators cannot vote."},
+                data={"detail": "Your role cannot vote."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -225,27 +232,38 @@ class VoteAPIView(APIView):
 
 
 class ParticipantSelfUpdateAPIView(APIView):
-    """Allow a participant to update their own name."""
+    """Allow name self-update and role change by any room participant."""
 
     permission_classes = [IsRoomParticipantPermission]
 
     def patch(self, request, room_uid, participant_uid):
-        if request.participant.uid != participant_uid:
-            return Response(
-                {"detail": "You can only update your own name."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        target = get_object_or_404(Participant, uid=participant_uid, room__uid=room_uid)
         new_name = request.data.get("name", "").strip()
-        if not new_name:
-            return Response({"detail": "Name cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+        new_role = request.data.get("role", "").strip()
 
-        participant = request.participant
-        participant.name = new_name
-        participant.save()
-        localStorage_name = new_name  # returned so frontend can update localStorage
+        if new_name:
+            if request.participant.uid != participant_uid:
+                return Response(
+                    {"detail": "You can only update your own name."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            target.name = new_name
 
-        serializer = ParticipantSerializer(instance=participant)
-        broadcast_room_event(room_uid, 'rename_participant', serializer.data)
+        if new_role:
+            valid_roles = {r[0] for r in Participant.ROLE_CHOICES}
+            if new_role not in valid_roles:
+                return Response({"detail": "Invalid role."}, status=status.HTTP_400_BAD_REQUEST)
+            target.role = new_role
+
+        if not new_name and not new_role:
+            return Response({"detail": "Nothing to update."}, status=status.HTTP_400_BAD_REQUEST)
+
+        target.save()
+        serializer = ParticipantSerializer(instance=target)
+        try:
+            broadcast_room_event(room_uid, 'update_participant', serializer.data)
+        except Exception:
+            pass
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -280,6 +298,29 @@ class RoomSummaryAPIView(APIView):
             "participants": ParticipantSerializer(participants, many=True).data,
             "issues": IssueSerializer(issues, many=True).data,
         })
+
+
+class RoomUpdateAPIView(APIView):
+    """Allow participants to update room title and card_set."""
+
+    permission_classes = [IsRoomParticipantPermission]
+
+    def patch(self, request, room_uid):
+        room = get_object_or_404(Room, uid=room_uid)
+        title = request.data.get('title', '').strip()
+        card_set = request.data.get('card_set', '').strip()
+
+        if title:
+            room.title = title
+        if card_set and card_set in [Room.STANDARD, Room.FIBONACCI, Room.TSHIRT]:
+            room.card_set = card_set
+        room.save()
+
+        broadcast_room_event(room_uid, 'update_room', {
+            'title': room.title,
+            'card_set': room.card_set,
+        })
+        return Response({'title': room.title, 'card_set': room.card_set}, status=status.HTTP_200_OK)
 
 
 class FlipIssueVoteCardsAPIView(APIView):

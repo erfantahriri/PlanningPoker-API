@@ -61,9 +61,21 @@ class Participant(BaseModel):
 
     """
 
-    VOTER = 'voter'
-    SPECTATOR = 'spectator'
-    ROLE_CHOICES = [(VOTER, 'Voter'), (SPECTATOR, 'Spectator')]
+    DEV = 'dev'
+    DESIGNER = 'designer'
+    PM = 'pm'
+    EM = 'em'
+    VOTER = 'voter'        # legacy
+    SPECTATOR = 'spectator'  # legacy
+    ROLE_CHOICES = [
+        (DEV, 'Developer'),
+        (DESIGNER, 'Designer'),
+        (PM, 'Product Manager'),
+        (EM, 'Eng Manager'),
+        (VOTER, 'Voter'),
+        (SPECTATOR, 'Spectator'),
+    ]
+    VOTING_ROLES = {DEV, DESIGNER, VOTER}
 
     room = models.ForeignKey(Room, verbose_name=_('Room'),
                              on_delete=models.CASCADE,
