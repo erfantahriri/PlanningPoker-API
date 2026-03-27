@@ -44,6 +44,10 @@ class Participant(BaseModel):
 
     """
 
+    VOTER = 'voter'
+    SPECTATOR = 'spectator'
+    ROLE_CHOICES = [(VOTER, 'Voter'), (SPECTATOR, 'Spectator')]
+
     room = models.ForeignKey(Room, verbose_name=_('Room'),
                              on_delete=models.CASCADE,
                              related_name="participants")
@@ -52,6 +56,9 @@ class Participant(BaseModel):
 
     is_creator = models.BooleanField(verbose_name=_("Is Creator"),
                                      default=False)
+
+    role = models.CharField(verbose_name=_("Role"), max_length=16,
+                            choices=ROLE_CHOICES, default=VOTER)
 
     class Meta:
         verbose_name = _("Participant")
