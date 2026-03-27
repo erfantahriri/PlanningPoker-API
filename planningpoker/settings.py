@@ -179,6 +179,14 @@ STORY_POINT_CHOICES = (
 STORY_POINT_CHOICES_LIST = [
     ZERO, HALF, ONE, TWO, THREE, FIVE, EIGHT, THIRTEEN, TWENTY, FORTY,
     HUNDRED, UNSURE,
+    # Fibonacci extras
+    '21', '34', '55',
+    # T-shirt sizes
+    'XS', 'S', 'M', 'L', 'XL', 'XXL',
+    # Coffee break
+    '☕',
+    # Half symbol alternative
+    '½',
 ]
 
 HIDDEN = 'hidden'
