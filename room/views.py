@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import status
 from rest_framework.generics import (ListCreateAPIView, get_object_or_404,
                                      RetrieveUpdateDestroyAPIView,
@@ -23,6 +24,9 @@ class RoomAPIView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         creator_name = serializer.validated_data.pop("creator_name")
+        raw_password = serializer.validated_data.pop("password", "")
+        if raw_password:
+            serializer.validated_data["password"] = make_password(raw_password)
         room = serializer.save()
         Participant.objects.create(
             room=room,
@@ -44,6 +48,14 @@ class JoinRoomAPIView(APIView):
         room = get_object_or_404(Room, uid=room_uid)
         serializer = JoinRoomInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        if room.is_private:
+            provided = serializer.data.get("password", "")
+            if not provided or not check_password(provided, room.password):
+                return Response(
+                    {"detail": "Incorrect password."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         participant, created = Participant.objects.get_or_create(
             room=room,
@@ -210,6 +222,64 @@ class VoteAPIView(APIView):
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ParticipantSelfUpdateAPIView(APIView):
+    """Allow a participant to update their own name."""
+
+    permission_classes = [IsRoomParticipantPermission]
+
+    def patch(self, request, room_uid, participant_uid):
+        if request.participant.uid != participant_uid:
+            return Response(
+                {"detail": "You can only update your own name."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        new_name = request.data.get("name", "").strip()
+        if not new_name:
+            return Response({"detail": "Name cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant = request.participant
+        participant.name = new_name
+        participant.save()
+        localStorage_name = new_name  # returned so frontend can update localStorage
+
+        serializer = ParticipantSerializer(instance=participant)
+        broadcast_room_event(room_uid, 'rename_participant', serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RoomInfoAPIView(APIView):
+    """Public endpoint returning basic room info (no auth required)."""
+
+    def get(self, request, room_uid):
+        room = get_object_or_404(Room, uid=room_uid)
+        return Response({
+            "uid": room.uid,
+            "title": room.title,
+            "is_private": room.is_private,
+            "card_set": room.card_set,
+        })
+
+
+class RoomSummaryAPIView(APIView):
+    """Public endpoint returning the full session summary (no auth required)."""
+
+    def get(self, request, room_uid):
+        from room.serializers import IssueSerializer, ParticipantSerializer
+        room = get_object_or_404(Room, uid=room_uid)
+        issues = Issue.objects.filter(room=room).prefetch_related(
+            'votes', 'votes__participant'
+        )
+        participants = Participant.objects.filter(room=room)
+        return Response({
+            "uid": room.uid,
+            "title": room.title,
+            "description": room.description,
+            "created": str(room.created),
+            "participants": ParticipantSerializer(participants, many=True).data,
+            "issues": IssueSerializer(issues, many=True).data,
+        })
 
 
 class FlipIssueVoteCardsAPIView(APIView):

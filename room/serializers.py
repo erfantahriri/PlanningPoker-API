@@ -26,7 +26,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'participant_count', 'issue_count', 'updated', 'created',)
+        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'participant_count', 'issue_count', 'updated', 'created',)
 
     def get_participant_count(self, obj):
         return obj.participants.count()
@@ -41,11 +41,12 @@ class RoomSerializerWithToken(RoomSerializer):
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
     creator_name = serializers.CharField(required=True, write_only=True)
+    password = serializers.CharField(required=False, write_only=True, allow_blank=True, default='')
     creator = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'creator_name', 'creator',
+        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'creator_name', 'password', 'creator',
                   'updated', 'created',)
 
     def validate_title(self, value):
@@ -64,6 +65,7 @@ class JoinRoomInputSerializer(serializers.Serializer):
     role = serializers.ChoiceField(
         choices=['voter', 'spectator'], default='voter', required=False
     )
+    password = serializers.CharField(required=False, allow_blank=True, default='')
 
 
 class SubmitRoomCurrentIssueInputSerializer(serializers.Serializer):

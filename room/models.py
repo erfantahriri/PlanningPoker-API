@@ -16,6 +16,23 @@ class Room(BaseModel):
 
     description = models.TextField(verbose_name=_("Description"))
 
+    is_private = models.BooleanField(verbose_name=_("Is Private"), default=False)
+
+    password = models.CharField(verbose_name=_("Password"), max_length=256, blank=True, default='')
+
+    STANDARD = 'standard'
+    FIBONACCI = 'fibonacci'
+    TSHIRT = 'tshirt'
+    CARD_SET_CHOICES = [
+        (STANDARD, 'Standard'),
+        (FIBONACCI, 'Fibonacci'),
+        (TSHIRT, 'T-Shirt Sizes'),
+    ]
+    card_set = models.CharField(
+        verbose_name=_("Card Set"), max_length=32,
+        choices=CARD_SET_CHOICES, default=STANDARD
+    )
+
     current_issue = models.ForeignKey(
         'room.Issue', verbose_name=_('Current Issue'),
         on_delete=models.SET_NULL, null=True, blank=True,

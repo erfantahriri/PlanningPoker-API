@@ -4,11 +4,16 @@ from room import views
 
 urlpatterns = [
     path('', views.RoomAPIView.as_view(), name='rooms'),
+    path('<str:room_uid>/info', views.RoomInfoAPIView.as_view(), name='room_info'),
+    path('<str:room_uid>/summary', views.RoomSummaryAPIView.as_view(), name='room_summary'),
     path('<str:room_uid>/join', views.JoinRoomAPIView.as_view(),
          name='join_room'),
     path('<str:room_uid>/participants',
          views.RoomParticipantsListAPIView.as_view(),
          name='room_participants'),
+    path('<str:room_uid>/participants/<str:participant_uid>',
+         views.ParticipantSelfUpdateAPIView.as_view(),
+         name='participant_self_update'),
     path('<str:room_uid>/issues', views.RoomIssueAPIView.as_view(),
          name='room_issues'),
     path('<str:room_uid>/current_issue',
