@@ -1,73 +1,83 @@
-# PlanningPoker
+# PlanningPoker API
 
-This is an back-end API service for PlanningPoker application
-This application is created to handle PlanningPoker estimating sessions of scrum agile methodology
+Django + Django Channels back-end for the PlanningPoker application — real-time planning sessions for scrum/agile teams.
 
-## Addresses
+## Features
 
-* [PlanningPoker API Doc](http://82.102.10.119:8080/redoc/) 
-* [PlanningPoker API](http://82.102.10.119:8080) 
-* [PlanningPoker Website](http://scrumplanning.ir)
-* [PlanningPoker Front-end project Github](https://github.com/erfantahriri/PlanningPoker-Front)
+- Room management: create, join, and update rooms with optional password protection
+- Participant roles: **Dev**, **Designer**, **PM**, **EM** (plus legacy Voter/Spectator) with per-role voting permissions
+- Card sets: Standard, Fibonacci, T-Shirt Sizes
+- Real-time updates over WebSocket (Django Channels + Redis)
+- Issue management: create, rename, delete, set current issue
+- Voting: submit votes, flip cards, reset board
+- Session summary: public endpoint with full issue/vote history
+- Voting timer and emoji reactions over WebSocket
 
-## requirements
+## Quick Start (Docker)
 
-For database you should install PostgreSQL:
-
-```sh
-$ sudo apt update
-$ sudo apt install postgresql postgresql-contrib
-$ sudo -u postgres psql
-$ CREATE DATABASE db_name;
-$ CREATE USER db_username WITH PASSWORD 'db_password';
-$ GRANT ALL PRIVILEGES ON DATABASE db_username TO db_name;
-
-```
-
-Also application will need some environment variables to run:
+The easiest way to run everything together is with Docker Compose from the repo root:
 
 ```sh
-$ export PLANNING_POKER_DB_NAME='db_name'
-$ export PLANNING_POKER_DB_USER='db_username'
-$ export PLANNING_POKER_DB_PASSWORD='db_password'
-$ export PLANNING_POKER_DB_HOST='127.0.0.1'
-$ export PLANNING_POKER_DJANGO_SECRET_KEY='django_secret_key'
-$ export PLANNING_POKER_SUID_ALPHABET='suid_alphabet'
-
+docker compose up --build
 ```
 
-And We use channels and channels_layer for implement WebSocket that uses Redis as its backing store. So you should [install Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/) first and after that start a redis server with running this command:
+This starts PostgreSQL, Redis, the API (on port 8000), and the front-end (on port 3000).
+
+## Manual Setup
+
+### Requirements
+
+- Python 3.9+
+- PostgreSQL
+- Redis
+
+### Environment variables
 
 ```sh
-$ docker run -p 6379:6379 -d redis:2.8
-
+export PLANNING_POKER_DB_NAME='planningpoker'
+export PLANNING_POKER_DB_USER='postgres'
+export PLANNING_POKER_DB_PASSWORD='postgres'
+export PLANNING_POKER_DB_HOST='127.0.0.1'
+export PLANNING_POKER_DJANGO_SECRET_KEY='your-secret-key'
+export PLANNING_POKER_JWT_SECRET_KEY='your-jwt-secret'
+export PLANNING_POKER_SUID_ALPHABET='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+export REDIS_HOST='localhost'
+export DJANGO_SETTINGS_MODULE='planningpoker.settings'
 ```
 
-## Building
-
-It is best to use the python `virtualenv` tool to build locally:
+### Run
 
 ```sh
-$ virtualenv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
-$ python manage.py runserver 0.0.0.0:8000
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+daphne -b 0.0.0.0 -p 8000 planningpoker.routing:application
 ```
 
-Then visit `http://0.0.0.0:8000` to view the app. Alternatively you
-can use uwsgi to run the server locally.
+API is available at `http://localhost:8000`. Docs at `http://localhost:8000/redoc/`.
 
-## Get involved!
+## API Overview
 
-We are happy to receive PR, bug reports, fixes and other improvements.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/v1/rooms/` | List / create rooms |
+| POST | `/v1/rooms/:uid/join` | Join a room |
+| GET | `/v1/rooms/:uid/info` | Public room info |
+| GET | `/v1/rooms/:uid/summary` | Public session summary |
+| PATCH | `/v1/rooms/:uid` | Update room title / card set |
+| GET | `/v1/rooms/:uid/participants` | List participants |
+| PATCH | `/v1/rooms/:uid/participants/:uid` | Update own name or any participant's role |
+| GET/POST | `/v1/rooms/:uid/issues` | List / create issues |
+| GET/PATCH/DELETE | `/v1/rooms/:uid/issues/:uid` | Get / update / delete issue |
+| GET/POST | `/v1/rooms/:uid/current_issue` | Get / set current issue |
+| GET/POST/DELETE | `/v1/rooms/:uid/issues/:uid/votes` | Get / submit / reset votes |
+| POST | `/v1/rooms/:uid/issues/:uid/votes/flip` | Flip vote cards |
 
-Please report bugs via the
-[github issue tracker](https://github.com/erfantahriri/PlanningPoker-API/issues).
+## Related
 
-Master [git repository](https://github.com/erfantahriri/PlanningPoker-API):
+- [PlanningPoker-Front](https://github.com/erfantahriri/PlanningPoker-Front)
 
-* `git clone https://github.com/erfantahriri/PlanningPoker-API`
+## License
 
-## Licensing
-
-This library is GPL-3.0 licenced.
+GPL-3.0

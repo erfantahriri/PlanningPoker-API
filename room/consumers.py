@@ -87,6 +87,9 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def rename_participant(self, message):
         await self._forward_message(message)
 
+    async def update_participant(self, message):
+        await self._forward_message(message)
+
     async def add_vote(self, message):
         await self._forward_message(message)
 
@@ -103,4 +106,7 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self._forward_message(message)
 
     async def reaction(self, message):
+        await self._forward_message(message)
+
+    async def update_room(self, message):
         await self._forward_message(message)

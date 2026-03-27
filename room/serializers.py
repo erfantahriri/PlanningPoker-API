@@ -41,12 +41,18 @@ class RoomSerializerWithToken(RoomSerializer):
     title = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
     creator_name = serializers.CharField(required=True, write_only=True)
+    creator_role = serializers.ChoiceField(
+        choices=[r[0] for r in Participant.ROLE_CHOICES],
+        default=Participant.DEV,
+        required=False,
+        write_only=True,
+    )
     password = serializers.CharField(required=False, write_only=True, allow_blank=True, default='')
     creator = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Room
-        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'creator_name', 'password', 'creator',
+        fields = ('uid', 'title', 'description', 'is_private', 'card_set', 'creator_name', 'creator_role', 'password', 'creator',
                   'updated', 'created',)
 
     def validate_title(self, value):
@@ -63,7 +69,9 @@ class JoinRoomInputSerializer(serializers.Serializer):
 
     name = serializers.CharField(required=True)
     role = serializers.ChoiceField(
-        choices=['voter', 'spectator'], default='voter', required=False
+        choices=[r[0] for r in Participant.ROLE_CHOICES],
+        default=Participant.DEV,
+        required=False,
     )
     password = serializers.CharField(required=False, allow_blank=True, default='')
 
