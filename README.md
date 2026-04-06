@@ -55,7 +55,7 @@ python manage.py migrate
 daphne -b 0.0.0.0 -p 8000 planningpoker.routing:application
 ```
 
-API is available at `http://localhost:8000`. Docs at `http://localhost:8000/redoc/`.
+API is available at `http://localhost:8000`. Docs at `http://localhost:8000/swagger/` (Swagger UI) or `http://localhost:8000/redoc/` (ReDoc).
 
 ## API Overview
 
