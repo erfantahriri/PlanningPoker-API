@@ -1,4 +1,4 @@
-Django==4.2.29
+Django==4.2.30
 psycopg2-binary==2.9.11
 djangorestframework==3.15.2
 shortuuid==1.0.13
