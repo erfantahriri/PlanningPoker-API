@@ -2,7 +2,7 @@ Django==4.2.29
 psycopg2-binary==2.9.11
 djangorestframework==3.15.2
 shortuuid==1.0.13
-PyJWT==2.12.0
+PyJWT==2.13.0
 drf-yasg==1.21.15
 django-cors-headers==4.4.0
 channels==4.2.2
